@@ -3,8 +3,18 @@
         <div class="modal-mask">
             <div class="row">
                 <ul v-sortable="{ onUpdate: onUpdate ,onSort:onSortProxy}">
-                    <li v-for="item in list" class="record"> name : {{ item.name }}
-                        <span class="delete" @click="removeItem(item)">Delete</span>
+                    <li v-for="item in list" class="record">
+
+                        <p>
+                            name : {{ item.name }}
+                            <span class="delete" @click="editItem(item)">Edit</span>
+                            <span class="delete" @click="removeItem(item)">Delete</span>
+                        </p>
+
+                        <p v-if="item.edit">
+                            <input v-model="nameInput" @keyup="updateName(item)"/>
+                        </p>
+
                     </li>
                 </ul>
             </div>
@@ -20,6 +30,7 @@
                     <li v-for="item in listMirror"> name : {{ item.name }}</li>
                 </ul>
             </div>
+
         </div>
     </transition>
 </template>
@@ -31,6 +42,7 @@
             this.name = "name_" + index;
             this.id = index;
             this.index = index;
+            this.edit = false
         }
     }
 
@@ -41,13 +53,15 @@
                 show: true,
                 name: "",
                 list: [],
-                listMirror: []
+                listMirror: [],
+                nameInput: "",
             };
         },
         watch: {
             listMirror(){
+                console.log(JSON.stringify(this.listMirror));
                 const self = this;
-                fetch('http://localhost:3000', {
+                fetch('/project/chapter/order', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -72,12 +86,24 @@
                 this.add(this.name);
                 this.name = "";
             },
-            removeItem(val){
-                const filtered = this.listMirror.filter(e => {
-                    return (e.id === val.id);
+            updateName(val){
+                this.list.forEach((v) => {
+                    val.id === v.id ? v.name = this.nameInput : null;
                 });
-                this.list.splice(filtered.index, 1);
-                this.listMirror.splice(filtered.index, 1);
+            },
+            editItem(val){
+                this.list.forEach((v) => {
+                    v.edit = val.id === v.id ? !v.edit : false;
+                });
+                this.nameInput = val.name;
+            },
+            removeItem(val){
+                this.list = this.list.filter(e => {
+                    return (e.id !== val.id);
+                });
+                this.listMirror = this.listMirror.filter(e => {
+                    return (e.id !== val.id);
+                });
                 this.updateOrder();
             },
             updateOrder(){
@@ -102,6 +128,7 @@
             for (let i = 0; i < 4; i++) {
                 this.add(i);
             }
+            this.updateOrder();
         },
     }
 </script>
